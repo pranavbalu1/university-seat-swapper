@@ -1,0 +1,43 @@
+### Register User
+POST http://127.0.0.1:8000/api/register/
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "password": "testpassword",
+    "email": "test@test.com"
+}
+
+###
+
+### Login User
+POST http://127.0.0.1:8000/api/login/
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "password": "testpassword"
+}
+
+###
+
+### Invalid Login (Wrong Credentials)
+POST http://127.0.0.1:8000/api/login/
+Content-Type: application/json
+
+{
+    "username": "wronguser",
+    "password": "wrongpassword"
+}
+
+###
+
+### Test Token
+GET http://127.0.0.1:8000/api/test_token/
+Content-Type: application/json
+Authorization: Token a1f73ecdb3fe020176db2c270af6c37eb0110508
+
+{
+
+}
+
