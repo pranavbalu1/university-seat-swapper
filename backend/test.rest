@@ -35,9 +35,35 @@ Content-Type: application/json
 ### Test Token
 GET http://127.0.0.1:8000/api/test_token/
 Content-Type: application/json
-Authorization: Token a1f73ecdb3fe020176db2c270af6c37eb0110508
+Authorization: Token bd53194b604990d8c84adb3b552a99feb0163af3
 
 {
 
+}
+
+### Create/Update Profile (Authenticated)
+POST http://127.0.0.1:8000/api/profile/
+Content-Type: application/json
+Authorization: Token bd53194b604990d8c84adb3b552a99feb0163af3
+
+{
+    "student_id": "S12345678",
+    "full_name": "Test User",
+    "email": "testuser_updated@test.com"
+}
+
+
+
+### Add Class (Authenticated)
+POST http://127.0.0.1:8000/api/add_class/
+Content-Type: application/json
+Authorization: Token bd53194b604990d8c84adb3b552a99feb0163af3
+
+{
+    "course_number": "CS101",
+    "section_number": "01",
+    "class_name": "Introduction to Computer Science",
+    "instructor": "Prof. John Doe",
+    "start_time": "2025-02-10T09:00:00Z"
 }
 
