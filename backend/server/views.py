@@ -59,7 +59,6 @@ def create_or_update_profile(request):
     serializer = StudentProfileSerializer(profile)
     return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
-
 # Add a new class to a student's schedule
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
@@ -72,4 +71,13 @@ def add_class(request):
         serializer.save(user=user)  # Associate the class with the logged-in user
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_classes(request):
+    user = request.user
+    classes = StudentClass.objects.filter(user=user)
+    serializer = StudentClassSerializer(classes, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 

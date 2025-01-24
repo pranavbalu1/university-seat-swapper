@@ -67,3 +67,11 @@ Authorization: Token bd53194b604990d8c84adb3b552a99feb0163af3
     "start_time": "2025-02-10T09:00:00Z"
 }
 
+### Get Classes (Authenticated)
+GET http://127.0.0.1:8000/api/get_classes/
+Content-Type: application/json
+Authorization: Token bd53194b604990d8c84adb3b552a99feb0163af3
+
+{
+
+}
