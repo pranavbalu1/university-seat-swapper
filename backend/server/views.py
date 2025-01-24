@@ -6,9 +6,12 @@ from rest_framework.permissions import IsAuthenticated # type: ignore
 from django.contrib.auth.models import User # type: ignore
 from rest_framework.authtoken.models import Token # type: ignore
 from django.shortcuts import get_object_or_404 # type: ignore
+from django.contrib.auth.password_validation import validate_password # type: ignore
 
 from .serializers import UserSerializer, StudentProfileSerializer, StudentClassSerializer
 from .models import StudentProfile, StudentClass
+
+
 
 # Login View
 @api_view(['POST'])
@@ -23,6 +26,12 @@ def login(request):
 # Register View
 @api_view(['POST'])
 def register(request):
+    data = request.data
+    try:
+        validate_password(data['password'])  # Validate password strength
+    except Exception as e:
+        return Response({"password": e.messages}, status=status.HTTP_400_BAD_REQUEST)
+
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()  # This automatically saves the user

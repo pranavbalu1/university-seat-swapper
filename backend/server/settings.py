@@ -1,7 +1,7 @@
 from pathlib import Path
 from os import environ
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv # type: ignore
 
 load_dotenv()
 
@@ -64,7 +64,16 @@ WSGI_APPLICATION = 'server.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+# https://docs.djangoproject.com/en/5.1/ref/settings/#databases\
+
+"""
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+"""
 
 DATABASES = {
     'default': {

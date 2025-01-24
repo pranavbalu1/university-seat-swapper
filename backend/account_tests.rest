@@ -1,0 +1,64 @@
+### Register User with Valid Data
+POST http://127.0.0.1:8000/api/register/
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "password": "TestPassword123!",
+    "email": "test@test.com"
+}
+
+### Register User with Weak Password
+POST http://127.0.0.1:8000/api/register/
+Content-Type: application/json
+
+{
+    "username": "weakuser",
+    "password": "123",
+    "email": "weak@test.com"
+}
+
+### Register User with Missing Email
+POST http://127.0.0.1:8000/api/register/
+Content-Type: application/json
+
+{
+    "username": "noemailuser",
+    "password": "TestPassword123!"
+}
+
+### Login User with Valid Credentials
+POST http://127.0.0.1:8000/api/login/
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "password": "TestPassword123!"
+}
+
+### Invalid Login (Wrong Credentials)
+POST http://127.0.0.1:8000/api/login/
+Content-Type: application/json
+
+{
+    "username": "wronguser",
+    "password": "wrongpassword"
+}
+
+### Test Token (Valid Token)
+GET http://127.0.0.1:8000/api/test_token/
+Content-Type: application/json
+Authorization: Token c31bf6b9c68f791ee41978ff1730c390d7e4c7c7
+
+{
+
+}
+
+### Test Token (Invalid Token)
+GET http://127.0.0.1:8000/api/test_token/
+Content-Type: application/json
+Authorization: Token invalidtoken
+
+{
+
+}

@@ -4,10 +4,10 @@ from .views import login, register, test_token, create_or_update_profile, add_cl
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    re_path('login/', login, name='login'),
-    re_path('register/', register, name='register'),
-    re_path('test_token/', test_token, name='test_token'),
-    re_path('profile/', create_or_update_profile, name='create_or_update_profile'),
-    re_path('add_class/', add_class, name='add_class'),
-    re_path('get_classes/', get_classes, name='get_classes'),
+    path('api/login/', login, name='login'),
+    path('api/register/', register, name='register'),
+    path('api/test_token/', test_token, name='test_token'),
+    path('api/profile/', create_or_update_profile, name='create_or_update_profile'),
+    path('api/add_class/', add_class, name='add_class'),
+    path('api/get_classes/', get_classes, name='get_classes'),
 ]

@@ -64,7 +64,8 @@ Authorization: Token bd53194b604990d8c84adb3b552a99feb0163af3
     "section_number": "01",
     "class_name": "Introduction to Computer Science",
     "instructor": "Prof. John Doe",
-    "start_time": "2025-02-10T09:00:00Z"
+    "start_time": "2025-02-10T09:00:00Z",
+    "days": ["Monday", "Wednesday", "Friday"],
 }
 
 ### Get Classes (Authenticated)

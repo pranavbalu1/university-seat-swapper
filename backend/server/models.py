@@ -20,6 +20,10 @@ class StudentClass(models.Model):
     class_name = models.CharField(max_length=255)
     instructor = models.CharField(max_length=255)
     start_time = models.DateTimeField()
+    days = models.JSONField(default=list)
+
+    class Meta:
+        unique_together = ['user', 'course_number', 'section_number'] # Cant sign up for the same class twice
 
     def __str__(self):
         return f"{self.class_name} ({self.course_number}-{self.section_number})"
