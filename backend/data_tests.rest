@@ -1,7 +1,7 @@
 ### Create/Update Profile (Valid Data)
 POST http://127.0.0.1:8000/api/profile/
 Content-Type: application/json
-Authorization: Token c31bf6b9c68f791ee41978ff1730c390d7e4c7c7
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
 
 {
     "student_id": "S12345678",
@@ -19,6 +19,10 @@ Authorization: Token c31bf6b9c68f791ee41978ff1730c390d7e4c7c7
     "full_name": "Test User",
     "email": "testuser_updated@test.com"
 }
+
+### Get User Profile
+GET http://127.0.0.1:8000/api/get_profile/
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
 
 ### Add Class with Valid Data
 POST http://127.0.0.1:8000/api/add_class/

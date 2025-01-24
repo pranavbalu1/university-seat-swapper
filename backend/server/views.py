@@ -68,6 +68,20 @@ def create_or_update_profile(request):
     serializer = StudentProfileSerializer(profile)
     return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
+# Get the student profile
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_profile(request):
+    user = request.user
+    try:
+        profile = user.profile  # Access the related StudentProfile
+        serializer = StudentProfileSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except StudentProfile.DoesNotExist:
+        return Response({"detail": "Profile not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
 # Add a new class to a student's schedule
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
