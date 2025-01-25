@@ -1,5 +1,5 @@
 ### Register User with Valid Data
-POST http://127.0.0.1:8000/api/register/
+POST http://127.0.0.1:8000/api/auth/register/
 Content-Type: application/json
 
 {
@@ -9,7 +9,7 @@ Content-Type: application/json
 }
 
 ### Register User with Weak Password
-POST http://127.0.0.1:8000/api/register/
+POST http://127.0.0.1:8000/api/auth/register/
 Content-Type: application/json
 
 {
@@ -19,7 +19,7 @@ Content-Type: application/json
 }
 
 ### Register User with Missing Email
-POST http://127.0.0.1:8000/api/register/
+POST http://127.0.0.1:8000/api/auth/register/
 Content-Type: application/json
 
 {
@@ -28,7 +28,7 @@ Content-Type: application/json
 }
 
 ### Login User with Valid Credentials
-POST http://127.0.0.1:8000/api/login/
+POST http://127.0.0.1:8000/api/auth/login/
 Content-Type: application/json
 
 {
@@ -37,7 +37,7 @@ Content-Type: application/json
 }
 
 ### Invalid Login (Wrong Credentials)
-POST http://127.0.0.1:8000/api/login/
+POST http://127.0.0.1:8000/api/auth/login/
 Content-Type: application/json
 
 {
@@ -46,16 +46,16 @@ Content-Type: application/json
 }
 
 ### Test Token (Valid Token)
-GET http://127.0.0.1:8000/api/test_token/
+GET http://127.0.0.1:8000/api/auth/test_token/
 Content-Type: application/json
-Authorization: Token c31bf6b9c68f791ee41978ff1730c390d7e4c7c7
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
 
 {
 
 }
 
 ### Test Token (Invalid Token)
-GET http://127.0.0.1:8000/api/test_token/
+GET http://127.0.0.1:8000/api/auth/test_token/
 Content-Type: application/json
 Authorization: Token invalidtoken
 

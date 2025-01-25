@@ -1,6 +1,6 @@
 from rest_framework import serializers # type: ignore
 from django.contrib.auth.models import User # type: ignore
-from .models import StudentProfile, StudentClass
+from .models import StudentProfile, StudentClass 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,4 +17,3 @@ class StudentClassSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentClass
         fields = ['id', 'course_number', 'section_number', 'class_name', 'instructor', 'start_time', 'days']
-

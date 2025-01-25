@@ -1,0 +1,26 @@
+### Create/Update Profile (Valid Data)
+POST http://127.0.0.1:8000/api/profile/create_or_update_profile/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "student_id": "S12345678",
+    "full_name": "Test User",
+    "email": "testuser_updated@test.com"
+}
+#TODO: Add student id validation 
+### Create/Update Profile (Invalid student_id Format)
+POST http://127.0.0.1:8000/api/profile/create_or_update_profile/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "student_id": "123",
+    "full_name": "Test User",
+    "email": "testuser_updated@test.com"
+}
+
+### Get User Profile
+GET http://127.0.0.1:8000/api/profile/get_profile
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+

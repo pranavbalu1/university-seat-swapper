@@ -1,0 +1,150 @@
+### Add Class with Valid Data
+POST http://127.0.0.1:8000/api/profile/add_class/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "course_number": "CS101",
+    "section_number": "01",
+    "class_name": "Introduction to Computer Science",
+    "instructor": "Prof. John Doe",
+    "start_time": "2025-02-10T09:00:00Z",
+    "days": ["Monday", "Wednesday", "Friday"]
+}
+
+
+### Add Duplicate Class for Same User
+POST http://127.0.0.1:8000/api/profile/add_class/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "course_number": "CS101",
+    "section_number": "01",
+    "class_name": "Introduction to Computer Science",
+    "instructor": "Prof. John Doe",
+    "start_time": "2025-02-10T09:00:00Z",
+    "days": ["Monday", "Wednesday", "Friday"]
+}
+
+### Get Classes for Authenticated User
+GET http://127.0.0.1:8000/api/profile/get_classes/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+
+}
+
+### Add Class for CS102
+POST http://127.0.0.1:8000/api/profile/add_class/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "course_number": "CS102",
+    "section_number": "01",
+    "class_name": "Data Structures",
+    "instructor": "Prof. Jane Smith",
+    "start_time": "2025-02-10T11:00:00Z",
+    "days": ["Monday", "Wednesday", "Friday"]
+}
+
+### Add Class for CS103
+POST http://127.0.0.1:8000/api/profile/add_class/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "course_number": "CS103",
+    "section_number": "01",
+    "class_name": "Algorithms",
+    "instructor": "Prof. Alice Brown",
+    "start_time": "2025-02-10T14:00:00Z",
+    "days": ["Monday", "Wednesday", "Friday"]
+}
+
+### Add Class for CS104
+POST http://127.0.0.1:8000/api/profile/add_class/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "course_number": "CS104",
+    "section_number": "01",
+    "class_name": "Operating Systems",
+    "instructor": "Prof. Charlie Green",
+    "start_time": "2025-02-15T08:00:00Z",
+    "days": ["Monday", "Wednesday", "Friday"]
+}
+
+### Add Class for CS201
+POST http://127.0.0.1:8000/api/profile/add_class/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "course_number": "CS201",
+    "section_number": "01",
+    "class_name": "Intermediate Computer Science",
+    "instructor": "Prof. John Doe",
+    "start_time": "2025-02-10T09:00:00Z",
+    "days": ["Monday", "Wednesday", "Friday"]
+}
+
+### Add Class for CS202
+POST http://127.0.0.1:8000/api/profile/add_class/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "course_number": "CS202",
+    "section_number": "01",
+    "class_name": "Computer Networks",
+    "instructor": "Prof. David Black",
+    "start_time": "2025-02-12T10:00:00Z",
+    "days": ["Tuesday", "Thursday"]
+}
+
+### Add Class for CS203
+POST http://127.0.0.1:8000/api/profile/add_class/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "course_number": "CS203",
+    "section_number": "01",
+    "class_name": "Discrete Mathematics",
+    "instructor": "Prof. Sarah White",
+    "start_time": "2025-02-10T13:00:00Z",
+    "days": ["Monday", "Wednesday", "Friday"]
+}
+
+### Add Class for CS301
+POST http://127.0.0.1:8000/api/profile/add_class/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "course_number": "CS301",
+    "section_number": "01",
+    "class_name": "Software Engineering",
+    "instructor": "Prof. John Doe",
+    "start_time": "2025-02-12T09:00:00Z",
+    "days": ["Tuesday", "Thursday"]
+}
+
+### Add Class for CS302
+POST http://127.0.0.1:8000/api/profile/add_class/
+Content-Type: application/json
+Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+
+{
+    "course_number": "CS302",
+    "section_number": "01",
+    "class_name": "Database Systems",
+    "instructor": "Prof. Michael Green",
+    "start_time": "2025-02-15T14:00:00Z",
+    "days": ["Monday", "Wednesday", "Friday"]
+}
+

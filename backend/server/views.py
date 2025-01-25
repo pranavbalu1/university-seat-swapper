@@ -1,3 +1,4 @@
+from django.utils import timezone # type: ignore
 from rest_framework.decorators import api_view, authentication_classes, permission_classes # type: ignore
 from rest_framework.response import Response # type: ignore
 from rest_framework import status # type: ignore
@@ -7,6 +8,7 @@ from django.contrib.auth.models import User # type: ignore
 from rest_framework.authtoken.models import Token # type: ignore
 from django.shortcuts import get_object_or_404 # type: ignore
 from django.contrib.auth.password_validation import validate_password # type: ignore
+from django.db import IntegrityError # type: ignore
 
 from .serializers import UserSerializer, StudentProfileSerializer, StudentClassSerializer
 from .models import StudentProfile, StudentClass
@@ -91,9 +93,18 @@ def add_class(request):
     data = request.data
     serializer = StudentClassSerializer(data=data)
     if serializer.is_valid():
-        serializer.save(user=user)  # Associate the class with the logged-in user
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        try:
+            # Attempt to save the new class with the user association
+            serializer.save(user=user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except IntegrityError:
+            # Handle the unique_together violation
+            return Response(
+                {"error": "You are already enrolled in this class."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
@@ -103,4 +114,3 @@ def get_classes(request):
     classes = StudentClass.objects.filter(user=user)
     serializer = StudentClassSerializer(classes, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
-
