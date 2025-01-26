@@ -1,6 +1,40 @@
 <script lang="ts">
-	import '../app.css';
-	let { children } = $props();
+  import Navbar from '$lib/components/Navbar.svelte';  // Import the Navbar component
+  import { onMount } from 'svelte';  // Import onMount from Svelte
+  import '../app.css';  // Import the global styles
+  
+  let { children } = $props();  // This will render the content of the pages
+
+  let isPageActive = true;
+
+  // Handle switching the favicon based on visibility
+  function updateFavicon() {
+    const favicon = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+    const newIcon = isPageActive ? "/cool.ico" : "/smirk.ico";
+    if (favicon) {
+        favicon.href = newIcon;
+    }
+  }
+
+  // Listen to visibility change events
+  const handleVisibilityChange = () => {
+    isPageActive = !document.hidden;
+    updateFavicon();
+  };
+
+  // Set up event listener when the component is mounted
+  onMount(() => {
+    updateFavicon(); // Set initial favicon
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  });
 </script>
 
-{@render children()}
+<Navbar />  <!-- Add the Navbar at the top -->
+
+<main class="bg-background min-h-screen">  <!-- Add a background color if necessary -->
+  {@render children()}  <!-- This renders the content of each page -->
+</main>

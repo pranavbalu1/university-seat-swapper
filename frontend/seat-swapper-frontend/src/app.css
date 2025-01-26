@@ -1,3 +1,27 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+
+/* Title Fonts (Belanosima) */
+.text-belenosima {
+    font-family: 'Belanosima', sans-serif;
+}
+
+/* Simple Text / Pop-ups Fonts (Open Sans) */
+* {
+    font-family: 'Open Sans', sans-serif;
+}
+
+/* Other Text Fonts (Quicksand) */
+.text-quicksand {
+    font-family: 'Quicksand', sans-serif;
+}
+
+body {
+    background-image: url('/static/dot_background.svg'); 
+    background-size: 50px 50px; 
+    background-repeat: repeat; 
+    background-position: center;
+    margin: 0;
+    min-height: 100vh; 
+}
