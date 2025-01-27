@@ -1,4 +1,5 @@
 import { PUBLIC_API_BASE_URL } from '$env/static/public';
+import { setAuth } from '../../stores/authstore';
 
 export async function login(email: string, password: string) {
     const response = await fetch(`${PUBLIC_API_BASE_URL}/auth/login/`, {
@@ -12,7 +13,12 @@ export async function login(email: string, password: string) {
         throw new Error(error.detail || 'Failed to log in.');
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Store token and user information in authStore
+    setAuth(data.token, data.user);
+
+    return data;
 }
 
 export async function register(email: string, password: string) {
@@ -27,8 +33,14 @@ export async function register(email: string, password: string) {
         throw new Error(error.detail || 'Failed to register.');
     }
 
-    return response.json();
+    const data = await response.json();
+
+    // Store token and user information in authStore
+    setAuth(data.token, data.user);
+
+    return data;
 }
+
 
 export async function testToken(token: string) {
     const response = await fetch(`${PUBLIC_API_BASE_URL}/auth/test_token/`, {

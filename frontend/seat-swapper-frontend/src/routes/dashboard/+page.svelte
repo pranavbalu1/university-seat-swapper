@@ -1,71 +1,83 @@
 <script lang="ts">
-  import { writable } from 'svelte/store';
-  import FaEdit from 'svelte-fa';
-  import FaTrash from 'svelte-fa';
-  import { faEdit, faTrash } from '@fortawesome/free-solid-svg-icons'; // Import icon definitions
+    import { writable } from 'svelte/store';
+    import { getProfile, createOrUpdateProfile } from '$lib/api/profile';
+    import FaEdit from 'svelte-fa';
+    import FaTrash from 'svelte-fa';
+    import { faEdit, faTrash } from '@fortawesome/free-solid-svg-icons'; // Import icon definitions
 
-  // Define types for profile and class data
-  interface Profile {
+    
+
+    interface Profile {
     student_id: string;
     full_name: string;
     email: string;
-  }
+    }
 
-  interface ClassData {
+    interface ClassData {
     course_number: string;
     section_number: string;
     class_name: string;
     instructor: string;
     start_time: string;
     days: string[];
-  }
+    }
 
-  // Tabs state
-  let activeTab = writable<'profile' | 'schedule' | 'requests'>('profile');
+    // Tabs state
+    let activeTab = writable<'profile' | 'schedule' | 'requests'>('profile');
 
-  // Profile store
-  let profile = writable<Profile>({
+    // Profile and class data stores
+    let profile = writable<Profile>({
     student_id: '',
     full_name: '',
     email: '',
-  });
-
-  // Schedule store and class input
-  let schedule = writable<ClassData[]>([]);
-  let classData = writable<ClassData>({
+    });
+    let schedule = writable<ClassData[]>([]);
+    let classData = writable<ClassData>({
     course_number: '',
     section_number: '',
     class_name: '',
     instructor: '',
     start_time: '',
     days: [],
-  });
-
-  // Function to add a class
-  function addClass() {
-    schedule.update((current) => [...current, { ...$classData }]);
-    classData.set({
-      course_number: '',
-      section_number: '',
-      class_name: '',
-      instructor: '',
-      start_time: '',
-      days: [],
     });
-  }
 
-  // Function to remove a class
-  function removeClass(index: number) {
+    // Get profile data from the backend
+    async function loadProfile() {
+        try {
+            const profileData = await getProfile();
+            profile.set(profileData);
+        } catch (error) {
+            console.error('Error loading profile:', error);
+        }
+    }
+
+    // Save profile data to the backend
+    async function saveProfile() {
+        try {
+            await createOrUpdateProfile($profile);
+        } catch (error) {
+            console.error('Error saving profile:', error);
+        }
+    }
+
+    // Function to remove a class
+    function removeClass(index: number) {
     schedule.update((current) => current.filter((_, i) => i !== index));
-  }
+    }
 
-  // Function to edit a class
-  function editClass(index: number) {
+    // Function to edit a class
+    function editClass(index: number) {
     const cls = $schedule[index];
     classData.set({ ...cls });
     activeTab.set('schedule');
     removeClass(index);
-  }
+    }
+
+    // Fetch initial data when the component mounts
+    import { onMount } from 'svelte';
+    onMount(() => {
+    loadProfile();
+    });
 </script>
 
 <div class="flex flex-col justify-center items-center p-1 h-screen">
@@ -85,7 +97,7 @@
   <div class="flex flex-col justify-center items-center h-[45rem] w-[80%] max-w-[80rem] px-8 py-4 rounded-2xl border-2 border-gray-400">
     <!-- Profile tab -->
     {#if $activeTab === 'profile'}
-      <form class="flex flex-col gap-4 w-full max-w-md">
+      <form class="flex flex-col gap-4 w-full max-w-md" on:submit|preventDefault={saveProfile}>
         <label class="flex flex-col">
           Student ID:
           <input type="text" bind:value={$profile.student_id} class="border rounded-md px-2 py-1" />
@@ -149,7 +161,7 @@
             </div>
           </label>
 
-          <button type="button" on:click={addClass} class="px-4 py-2 bg-button text-primary rounded-md hover:bg-buttonHover">
+          <button type="button" class="px-4 py-2 bg-button text-primary rounded-md hover:bg-buttonHover">
             Add Class
           </button>
         </div>
@@ -189,15 +201,17 @@
         </div>
       </div>
     {/if}
+
+    <!-- Requests tab -->
+    {#if $activeTab === 'requests'}
+      <div>
+        <!-- Placeholder for future feature -->
+        <p>Requests coming soon!</p>
+      </div>
+    {/if}
   </div>
 </div>
 
 <style>
-  li {
-    position: relative;
-  }
 
-  li:hover .absolute {
-    opacity: 100;
-  }
 </style>

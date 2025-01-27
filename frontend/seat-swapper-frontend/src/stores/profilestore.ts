@@ -1,33 +1,21 @@
 import { writable } from 'svelte/store';
 
-export type Course = {
-  course_number: string;
-  section_number: string;
-  class_name: string;
-  instructor: string;
-  start_time: string;
-  days: string[];
-};
-
-export type Profile = {
-  name: string;
-  email: string;
-  courses: Course[];
-};
-
-export const profile = writable<Profile>({
-  name: '',
-  email: '',
-  courses: []
+export const profileStore = writable({
+    student_id: '',
+    full_name: '',
+    email: '',
 });
 
-export const addCourse = (course: Course) => {
-  profile.update((profileData) => {
-    profileData.courses.push(course);
-    return profileData;
-  });
-};
+// Set the profile data
+export function setProfile(profileData: { student_id: string; full_name: string; email: string }) {
+    profileStore.set(profileData);
+}
 
-export const updateProfile = (newProfileData: Profile) => {
-  profile.set(newProfileData);
-};
+// Clear the profile data
+export function clearProfile() {
+    profileStore.set({
+        student_id: '',
+        full_name: '',
+        email: '',
+    });
+}
