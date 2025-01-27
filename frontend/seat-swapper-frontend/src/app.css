@@ -16,12 +16,16 @@
 .text-quicksand {
     font-family: 'Quicksand', sans-serif;
 }
-
+/*
 body {
     background-image: url('/static/dot_background.svg'); 
-    background-size: 50px 50px; 
+    background-size: 5px 5px; 
     background-repeat: repeat; 
     background-position: center;
     margin: 0;
+    
+
+
     min-height: 100vh; 
 }
+*/

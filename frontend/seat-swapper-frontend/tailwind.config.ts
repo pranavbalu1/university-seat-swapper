@@ -15,14 +15,31 @@ export default {
         other: ['Quicksand', 'sans-serif'],
       },
       colors: {
-        primary: '#4C9AFF',
-        secondary: '#2F4F6F',
-        background: '#F1F5F9',
+        primary: '#232323',
+        secondary: '#bbbbba',
+        background: '#FFFFFF',
+        button:'#81f3ff',
         buttonHover: '#3B7FBC',
-        navbar: '#2F4F6F',  // Add this new color for navbar
+        navbar: '#202121',  // Add this new color for navbar
       },
     },
   },
 
-  plugins: [typography, forms, containerQueries],
+  
+
+  plugins: [typography, forms, containerQueries,
+    function ({ addUtilities }) {
+      addUtilities({
+        '.no-scrollbar': {
+          /* Hide scrollbar for modern browsers */
+          '-ms-overflow-style': 'none', // Internet Explorer 10+
+          'scrollbar-width': 'none', // Firefox
+        },
+        '.no-scrollbar::-webkit-scrollbar': {
+          display: 'none', // Safari and Chrome
+        },
+      });
+    },
+  ],
+
 } satisfies Config;
