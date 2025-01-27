@@ -4,8 +4,8 @@
     import FaEdit from 'svelte-fa';
     import FaTrash from 'svelte-fa';
     import { faEdit, faTrash } from '@fortawesome/free-solid-svg-icons'; // Import icon definitions
-
-    
+    import { getSchedule, add_class, remove_class } from '$lib/api/schedule';
+    import { onMount } from 'svelte';
 
     interface Profile {
     student_id: string;
@@ -21,6 +21,14 @@
     start_time: string;
     days: string[];
     }
+
+    interface RequestData {
+      request_id: string;
+      course_name: string;
+      requester: string;
+      status: string;
+    }
+
 
     // Tabs state
     let activeTab = writable<'profile' | 'schedule' | 'requests'>('profile');
@@ -51,6 +59,17 @@
         }
     }
 
+    // get class data from the backend
+    async function loadSchedule() {
+        try {
+            const scheduleData = await getSchedule();
+            schedule.set(scheduleData);
+            console.log('schedule: ', schedule);
+        } catch (error) {
+            console.error('Error loading schedule:', error);
+        }
+    }
+
     // Save profile data to the backend
     async function saveProfile() {
         try {
@@ -60,29 +79,98 @@
         }
     }
 
-    // Function to remove a class
-    function removeClass(index: number) {
-    schedule.update((current) => current.filter((_, i) => i !== index));
+  // Function to remove a class
+  async function removeClass(index: number) {
+    const cls = $schedule[index];
+    const classData = {
+      course_number: cls.course_number,
+      section_number: cls.section_number,
+    };
+
+    try {
+      // Call the API to remove the class
+      await remove_class(classData);
+
+      // Update the schedule store to reflect the removed class
+      schedule.update((current) => current.filter((_, i) => i !== index));
+    } catch (error) {
+      console.error('Error removing class:', error);
     }
+  }
+
+
+  // Add a new class and send it to the backend
+  async function addClass() {
+    try {
+      const newClass: any = { ...$classData };
+      await add_class(newClass);
+      schedule.update((current) => [...current, newClass]);
+      classData.set({
+        course_number: '',
+        section_number: '',
+        class_name: '',
+        instructor: '',
+        start_time: '',
+        days: [],
+      });
+    } catch (error) {
+      console.error('Error adding class:', error);
+    }
+  }
+
+
 
     // Function to edit a class
     function editClass(index: number) {
-    const cls = $schedule[index];
-    classData.set({ ...cls });
-    activeTab.set('schedule');
-    removeClass(index);
+      const cls = $schedule[index];
+      classData.set({ ...cls });
+      activeTab.set('schedule');
+      removeClass(index);
     }
 
-    // Fetch initial data when the component mounts
-    import { onMount } from 'svelte';
+    let requests = writable<RequestData[]>([
+      {
+        request_id: '1',
+        course_name: 'Math 101',
+        requester: 'John Doe',
+        status: 'open'
+      },
+      {
+        request_id: '2',
+        course_name: 'History 202',
+        requester: 'Jane Smith',
+        status: 'pending'
+      },
+      {
+        request_id: '3',
+        course_name: 'Physics 303',
+        requester: 'Sam Brown',
+        status: 'closed'
+      }
+    ]);
+
+    // Mock data for editing and removing requests (no API call, for UI purposes)
+    function editRequest(index: number) {
+      const request = $requests[index];
+      console.log('Edit request:', request);
+      // You can set the request data in a form to edit it (as an example)
+    }
+
+    function removeRequest(index: number) {
+      console.log('Remove request:', $requests[index]);
+      requests.update(current => current.filter((_, i) => i !== index));
+    }
+
+
     onMount(() => {
-    loadProfile();
+        loadProfile();
+        loadSchedule();
     });
 </script>
 
-<div class="flex flex-col justify-center items-center p-1 h-screen">
+<div class="flex flex-col justify-center items-center p-1 pt-[4%]">
   <!-- Tab navigation -->
-  <div class="flex justify-left gap-20 mb-8 w-[80%] max-w-[80rem] px-8 py-4 rounded-2xl border-2 border-gray-400">
+  <div class="flex justify-left gap-20 mb-2 mt-4 w-[80%] max-w-[80rem] px-8 py-4 rounded-2xl border-2 border-gray-400">
     <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => activeTab.set('profile')} class:underline={$activeTab === 'profile'}>
       Profile
     </button>
@@ -161,7 +249,7 @@
             </div>
           </label>
 
-          <button type="button" class="px-4 py-2 bg-button text-primary rounded-md hover:bg-buttonHover">
+          <button type="button" on:click={addClass}  class="px-4 py-2 bg-button text-primary rounded-md hover:bg-buttonHover">
             Add Class
           </button>
         </div>
@@ -204,11 +292,37 @@
 
     <!-- Requests tab -->
     {#if $activeTab === 'requests'}
-      <div>
-        <!-- Placeholder for future feature -->
-        <p>Requests coming soon!</p>
-      </div>
-    {/if}
+          <div class="w-full">
+            <h2 class="text-xl font-semibold mb-4">Trade Requests</h2>
+            <div class="no-scrollbar overflow-y-auto h-[40rem] px-1">
+              <ul class="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-6">
+                {#each $requests as request, index}
+                  <li class="relative bg-gray-50 border-[#bbbbba] border-2 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                    <div class="absolute inset-0 bg-white opacity-30 blur-sm transition-all z-0"></div>
+
+                    <div class="relative ">
+                      <p class="text-lg font-semibold mb-2">{request.course_name}</p>
+                      <div class="text-sm space-y-1">
+                        <p><strong>Requester:</strong> {request.requester}</p>
+                        <p><strong>Status:</strong> {request.status}</p>
+                      </div>
+                    </div>
+
+                    <!-- Action buttons (always visible, above the blurred background) -->
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-20">
+                      <button on:click={() => editRequest(index)} class="px-4 py-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 mr-2">
+                        <FaEdit icon={faEdit} class="text-xl" />
+                      </button>
+                      <button on:click={() => removeRequest(index)} class="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600">
+                        <FaTrash icon={faTrash} class="text-xl" />
+                      </button>
+                    </div>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          </div>
+        {/if}
   </div>
 </div>
 

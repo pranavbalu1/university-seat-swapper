@@ -27,3 +27,23 @@ class StudentClass(models.Model):
 
     def __str__(self):
         return f"{self.class_name} ({self.course_number}-{self.section_number})"
+
+
+class ClassTradeRequest(models.Model):
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="trade_requests")
+    offered_class = models.ForeignKey(StudentClass, on_delete=models.CASCADE, related_name="offered_class")
+    requested_class = models.ForeignKey(StudentClass, on_delete=models.CASCADE, related_name="requested_class")
+    status = models.CharField(max_length=20, choices=[('open', 'Open'), ('accepted', 'Accepted'), ('closed', 'Closed')], default='open')
+    upvotes = models.PositiveIntegerField(default=0)
+    downvotes = models.PositiveIntegerField(default=0)
+    favorites = models.ManyToManyField(User, related_name='favorite_requests', blank=True)
+
+    def __str__(self):
+        return f"Request by {self.requester.username} ({self.status})"
+
+class AcceptedRequest(models.Model):
+    request = models.OneToOneField(ClassTradeRequest, on_delete=models.CASCADE)
+    accepted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accepted_requests')
+
+    def __str__(self):
+        return f"Accepted by {self.accepted_by.username}"

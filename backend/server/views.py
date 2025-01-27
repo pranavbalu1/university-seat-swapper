@@ -10,8 +10,8 @@ from django.shortcuts import get_object_or_404 # type: ignore
 from django.contrib.auth.password_validation import validate_password # type: ignore
 from django.db import IntegrityError # type: ignore
 
-from .serializers import UserSerializer, StudentProfileSerializer, StudentClassSerializer
-from .models import StudentProfile, StudentClass
+from .serializers import UserSerializer, StudentProfileSerializer, StudentClassSerializer, ClassTradeRequestSerializer, AcceptedRequestSerializer
+from .models import StudentProfile, StudentClass, ClassTradeRequest, AcceptedRequest
 
 
 
@@ -22,6 +22,7 @@ def login(request):
     if not user.check_password(request.data['password']):
         return Response({"detail": "Invalid credentials."}, status=status.HTTP_400_BAD_REQUEST)
     token, created = Token.objects.get_or_create(user=user)
+    print(f"User {user.username} logged in with token: {token.key}")
     serializer = UserSerializer(instance=user)
     return Response({'token': token.key, 'user': serializer.data})
 
@@ -41,6 +42,7 @@ def register(request):
         user.save()
 
         token = Token.objects.create(user=user)
+        print(f"User {user.username} logged in with token: {token.key}")
         return Response({"token": token.key, "user": serializer.data}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -105,6 +107,24 @@ def add_class(request):
             )
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+# Remove a class from a student's schedule
+@api_view(['DELETE'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def remove_class(request):
+    user = request.user
+    data = request.data
+    course_number = data.get('course_number')
+    section_number = data.get('section_number')
+
+    # Find the class the user is enrolled in
+    try:
+        student_class = StudentClass.objects.get(user=user, course_number=course_number, section_number=section_number)
+        student_class.delete()  # Remove the class
+        return Response({"detail": "Class removed successfully."}, status=status.HTTP_200_OK)
+    except StudentClass.DoesNotExist:
+        return Response({"detail": "Class not found."}, status=status.HTTP_404_NOT_FOUND)
+
 
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
@@ -114,3 +134,123 @@ def get_classes(request):
     classes = StudentClass.objects.filter(user=user)
     serializer = StudentClassSerializer(classes, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# Create or update a class trade request
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def create_trade_request(request):
+    data = request.data
+    offered_class = get_object_or_404(StudentClass, id=data['offered_class_id'])
+    requested_class = get_object_or_404(StudentClass, id=data['requested_class_id'])
+    
+    if offered_class.user == request.user:
+        trade_request = ClassTradeRequest.objects.create(
+            requester=request.user,
+            offered_class=offered_class,
+            requested_class=requested_class
+        )
+        serializer = ClassTradeRequestSerializer(trade_request)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response({"detail": "You cannot offer your own class."}, status=status.HTTP_400_BAD_REQUEST)
+
+# Upvote a trade request
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def upvote_request(request, trade_request_id):
+    trade_request = get_object_or_404(ClassTradeRequest, id=trade_request_id)
+
+    if request.user in trade_request.favorites.all():
+        return Response({"detail": "You already favorited this request."}, status=status.HTTP_400_BAD_REQUEST)
+
+    trade_request.upvotes += 1
+    trade_request.save()
+    return Response(ClassTradeRequestSerializer(trade_request).data, status=status.HTTP_200_OK)
+
+# Downvote a trade request
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def downvote_request(request, trade_request_id):
+    trade_request = get_object_or_404(ClassTradeRequest, id=trade_request_id)
+
+    trade_request.downvotes += 1
+    trade_request.save()
+    return Response(ClassTradeRequestSerializer(trade_request).data, status=status.HTTP_200_OK)
+
+# Favorite a trade request
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def favorite_request(request, trade_request_id):
+    trade_request = get_object_or_404(ClassTradeRequest, id=trade_request_id)
+
+    if request.user in trade_request.favorites.all():
+        return Response({"detail": "You already favorited this request."}, status=status.HTTP_400_BAD_REQUEST)
+
+    trade_request.favorites.add(request.user)
+    return Response(ClassTradeRequestSerializer(trade_request).data, status=status.HTTP_200_OK)
+
+# Accept a trade request
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def accept_trade_request(request, trade_request_id):
+    trade_request = get_object_or_404(ClassTradeRequest, id=trade_request_id)
+
+    # Ensure the user meets the conditions for the request
+    if trade_request.requester == request.user:
+        return Response({"detail": "You cannot accept your own request."}, status=status.HTTP_400_BAD_REQUEST)
+
+    accepted_request = AcceptedRequest.objects.create(request=trade_request, accepted_by=request.user)
+    trade_request.status = 'accepted'
+    trade_request.save()
+
+    return Response(AcceptedRequestSerializer(accepted_request).data, status=status.HTTP_200_OK)
+
+# Get all trade requests
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_trade_requests(request):
+    trade_requests = ClassTradeRequest.objects.filter(status='open')
+    serializer = ClassTradeRequestSerializer(trade_requests, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# Remove a trade request created by the current user
+@api_view(['DELETE'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def remove_trade_request(request, trade_request_id):
+    try:
+        trade_request = ClassTradeRequest.objects.get(id=trade_request_id, requester=request.user)
+        trade_request.delete()
+        return Response({"detail": "Trade request deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+    except ClassTradeRequest.DoesNotExist:
+        return Response({"detail": "Request not found or you do not have permission to delete this request."}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Mark a trade request as accepted by the user who created it (self-acceptance)
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def mark_request_accepted(request, trade_request_id):
+    try:
+        trade_request = ClassTradeRequest.objects.get(id=trade_request_id, requester=request.user)
+
+        # Mark as accepted if the request is open
+        if trade_request.status == 'open':
+            trade_request.status = 'accepted'
+            trade_request.save()
+
+            # Create AcceptedRequest record
+            AcceptedRequest.objects.create(request=trade_request, accepted_by=request.user)
+
+            return Response(ClassTradeRequestSerializer(trade_request).data, status=status.HTTP_200_OK)
+        else:
+            return Response({"detail": "Request has already been accepted or closed."}, status=status.HTTP_400_BAD_REQUEST)
+    except ClassTradeRequest.DoesNotExist:
+        return Response({"detail": "Request not found or you do not have permission to accept this request."}, status=status.HTTP_404_NOT_FOUND)
