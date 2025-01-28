@@ -22,14 +22,6 @@
     days: string[];
     }
 
-    interface RequestData {
-      request_id: string;
-      course_name: string;
-      requester: string;
-      status: string;
-    }
-
-
     // Tabs state
     let activeTab = writable<'profile' | 'schedule' | 'requests'>('profile');
 
@@ -103,6 +95,7 @@
   async function addClass() {
     try {
       const newClass: any = { ...$classData };
+      console.log('newClass: ', newClass);
       await add_class(newClass);
       schedule.update((current) => [...current, newClass]);
       classData.set({
@@ -128,37 +121,148 @@
       removeClass(index);
     }
 
-    let requests = writable<RequestData[]>([
-      {
-        request_id: '1',
-        course_name: 'Math 101',
-        requester: 'John Doe',
-        status: 'open'
-      },
-      {
-        request_id: '2',
-        course_name: 'History 202',
-        requester: 'Jane Smith',
-        status: 'pending'
-      },
-      {
-        request_id: '3',
-        course_name: 'Physics 303',
-        requester: 'Sam Brown',
-        status: 'closed'
-      }
-    ]);
-
-    // Mock data for editing and removing requests (no API call, for UI purposes)
-    function editRequest(index: number) {
-      const request = $requests[index];
-      console.log('Edit request:', request);
-      // You can set the request data in a form to edit it (as an example)
+        // Add to existing interfaces
+    interface ClassRequest {
+        id: string;
+        ownerId: string;
+        offeredClass: ClassData;
+        desiredClass: {
+            course_number: string;
+            section_number: string;
+        };
+        status: 'open' | 'closed' | 'pending';
+        upvotedBy: string[];  // Changed from votes
+        downvotedBy: string[]; // New property
+        favorites: string[];
+        createdAt: Date;
     }
 
-    function removeRequest(index: number) {
-      console.log('Remove request:', $requests[index]);
-      requests.update(current => current.filter((_, i) => i !== index));
+    interface FilterCriteria {
+        courseNumber?: string;
+        className?: string;
+        instructor?: string;
+        status?: 'open' | 'closed' | 'pending';
+    }
+
+    // Add to existing stores
+    let requests = writable<ClassRequest[]>([]);
+    let newRequest = writable<{
+        offeredClassId: number | null;
+        desiredCourseNumber: string;
+        desiredSectionNumber: string;
+    }>({
+        offeredClassId: null,
+        desiredCourseNumber: '',
+        desiredSectionNumber: '',
+    });
+
+    let filterCriteria = writable<FilterCriteria>({});
+    
+    onMount(() => {
+        // Initialize mock requests
+        requests.set([
+            {
+                id: '1',
+                ownerId: 'user123',
+                offeredClass: {
+                    course_number: 'MATH101',
+                    section_number: '01',
+                    class_name: 'Calculus I',
+                    instructor: 'Dr. Smith',
+                    start_time: '10:00',
+                    days: ['Mon', 'Wed']
+                },
+                desiredClass: { course_number: 'PHYS201', section_number: '02' },
+                status: 'open',
+                upvotedBy: ['user123'], // Example existing votes
+                downvotedBy: [],
+                favorites: [],
+                createdAt: new Date()
+            },
+            // Add more mock requests as needed
+        ]);
+    });
+
+    // Request actions
+    function createRequest() {
+        // Get the selected class using the index from the dropdown
+        const offeredClass = $schedule[$newRequest.offeredClassId as number];
+        
+        if (offeredClass) {
+            const newReq: ClassRequest = {
+                id: Date.now().toString(),
+                ownerId: $profile.student_id,
+                offeredClass: { ...offeredClass },
+                desiredClass: {
+                    course_number: $newRequest.desiredCourseNumber,
+                    section_number: $newRequest.desiredSectionNumber
+                },
+                status: 'open',
+                upvotedBy: [],
+                downvotedBy: [],
+                favorites: [],
+                createdAt: new Date()
+            };
+            
+            requests.update(reqs => [...reqs, newReq]);
+            newRequest.set({
+                offeredClassId: null,
+                desiredCourseNumber: '',
+                desiredSectionNumber: '',
+            });
+        }
+    }
+
+    function voteRequest(requestId: string, upvote: boolean) {
+        requests.update(reqs => reqs.map(req => {
+            if (req.id === requestId) {
+                const userId = $profile.student_id;
+                const hasUpvoted = req.upvotedBy.includes(userId);
+                const hasDownvoted = req.downvotedBy.includes(userId);
+                
+                if (upvote) {
+                    return {
+                        ...req,
+                        upvotedBy: hasUpvoted 
+                            ? req.upvotedBy.filter(id => id !== userId)
+                            : [...req.upvotedBy, userId],
+                        downvotedBy: hasDownvoted
+                            ? req.downvotedBy.filter(id => id !== userId)
+                            : req.downvotedBy
+                    };
+                } else {
+                    return {
+                        ...req,
+                        downvotedBy: hasDownvoted
+                            ? req.downvotedBy.filter(id => id !== userId)
+                            : [...req.downvotedBy, userId],
+                        upvotedBy: hasUpvoted
+                            ? req.upvotedBy.filter(id => id !== userId)
+                            : req.upvotedBy
+                    };
+                }
+            }
+            return req;
+        }));
+    }
+
+    function toggleFavorite(requestId: string) {
+        requests.update(reqs => reqs.map(req => {
+            if (req.id === requestId) {
+                const isFavorited = req.favorites.includes($profile.student_id);
+                return {
+                    ...req,
+                    favorites: isFavorited 
+                        ? req.favorites.filter(id => id !== $profile.student_id)
+                        : [...req.favorites, $profile.student_id]
+                };
+            }
+            return req;
+        }));
+    }
+
+    function deleteRequest(requestId: string) {
+        requests.update(reqs => reqs.filter(req => req.id !== requestId));
     }
 
 
@@ -292,37 +396,160 @@
 
     <!-- Requests tab -->
     {#if $activeTab === 'requests'}
-          <div class="w-full">
-            <h2 class="text-xl font-semibold mb-4">Trade Requests</h2>
-            <div class="no-scrollbar overflow-y-auto h-[40rem] px-1">
-              <ul class="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-6">
-                {#each $requests as request, index}
-                  <li class="relative bg-gray-50 border-[#bbbbba] border-2 rounded-lg p-4 hover:shadow-lg transition-shadow">
-                    <div class="absolute inset-0 bg-white opacity-30 blur-sm transition-all z-0"></div>
+    <div class="flex flex-row w-full gap-6">
+        <!-- Create Request Panel -->
+        <div class="flex flex-col gap-4 w-1/3 max-w-md border-r-2 border-gray-400 pr-12">
+            <h2 class="text-xl font-semibold">Create Request</h2>
+            
+            <label class="flex flex-col">
+                Offer Class:
+                <select 
+                    bind:value={$newRequest.offeredClassId}
+                    class="border rounded-md px-2 py-1"
+                >
+                    <option value={null}>Select a class</option>
+                    {#each $schedule as cls, index}
+                        <option value={index}>{cls.class_name} - {cls.course_number}</option>
+                    {/each}
+                </select>
+            </label>
 
-                    <div class="relative ">
-                      <p class="text-lg font-semibold mb-2">{request.course_name}</p>
-                      <div class="text-sm space-y-1">
-                        <p><strong>Requester:</strong> {request.requester}</p>
-                        <p><strong>Status:</strong> {request.status}</p>
-                      </div>
-                    </div>
+            <label class="flex flex-col">
+                Desired Course Number:
+                <input 
+                    type="text" 
+                    bind:value={$newRequest.desiredCourseNumber}
+                    class="border rounded-md px-2 py-1"
+                />
+            </label>
 
-                    <!-- Action buttons (always visible, above the blurred background) -->
-                    <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-20">
-                      <button on:click={() => editRequest(index)} class="px-4 py-2 bg-yellow-500 text-white rounded-full hover:bg-yellow-600 mr-2">
-                        <FaEdit icon={faEdit} class="text-xl" />
-                      </button>
-                      <button on:click={() => removeRequest(index)} class="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600">
-                        <FaTrash icon={faTrash} class="text-xl" />
-                      </button>
-                    </div>
-                  </li>
-                {/each}
-              </ul>
+            <label class="flex flex-col">
+                Desired Section Number:
+                <input 
+                    type="text" 
+                    bind:value={$newRequest.desiredSectionNumber}
+                    class="border rounded-md px-2 py-1"
+                />
+            </label>
+
+            <button 
+                on:click={createRequest}
+                class="px-4 py-2 bg-button text-primary rounded-md hover:bg-buttonHover"
+            >
+                Create Request
+            </button>
+
+            <!-- Filter Section -->
+            <div class="mt-8">
+                <h2 class="text-xl font-semibold mb-4">Filters</h2>
+                <div class="space-y-4">
+                    <input 
+                        type="text" 
+                        placeholder="Course Number"
+                        bind:value={$filterCriteria.courseNumber}
+                        class="border rounded-md px-2 py-1 w-full"
+                    />
+                    <input 
+                        type="text" 
+                        placeholder="Class Name"
+                        bind:value={$filterCriteria.className}
+                        class="border rounded-md px-2 py-1 w-full"
+                    />
+                    <input 
+                        type="text" 
+                        placeholder="Instructor"
+                        bind:value={$filterCriteria.instructor}
+                        class="border rounded-md px-2 py-1 w-full"
+                    />
+                    <select 
+                        bind:value={$filterCriteria.status}
+                        class="border rounded-md px-2 py-1 w-full"
+                    >
+                        <option value={undefined}>All Statuses</option>
+                        <option value="open">Open</option>
+                        <option value="pending">Pending</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
             </div>
-          </div>
-        {/if}
+        </div>
+
+        <!-- Requests List -->
+        <div class="w-2/3 mx-auto rounded-lg">
+            <div class="no-scrollbar overflow-y-auto h-[40rem] px-1">
+                <ul class="grid grid-cols-1 gap-6">
+                    {#each $requests.filter(req => 
+                        (!$filterCriteria.courseNumber || req.desiredClass.course_number.includes($filterCriteria.courseNumber)) &&
+                        (!$filterCriteria.className || req.offeredClass.class_name.includes($filterCriteria.className)) &&
+                        (!$filterCriteria.instructor || req.offeredClass.instructor.includes($filterCriteria.instructor)) &&
+                        (!$filterCriteria.status || req.status === $filterCriteria.status)
+                    ) as req}
+                        <li class="relative bg-gray-50 border-[#bbbbba] border-2 rounded-lg p-4 hover:shadow-lg transition-shadow">
+                            <div class="absolute inset-0 bg-white opacity-30 blur-sm transition-all z-0"></div>
+                            
+                            <div class="relative">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <p class="text-lg font-semibold">{req.offeredClass.class_name}</p>
+                                        <p class="text-sm text-gray-600">Offered by {req.ownerId === $profile.student_id ? 'You' : 'User ' + req.ownerId.slice(-4)}</p>
+                                    </div>
+                                    <span class="px-2 py-1 text-sm rounded-full 
+                                        {req.status === 'open' ? 'bg-green-100 text-green-800' :
+                                        req.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-red-100 text-red-800'}">
+                                        {req.status}
+                                    </span>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p class="font-semibold">Offering:</p>
+                                        <p>{req.offeredClass.course_number} - Sec {req.offeredClass.section_number}</p>
+                                        <p>Instructor: {req.offeredClass.instructor}</p>
+                                        <p>Time: {req.offeredClass.start_time}</p>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold">Desired:</p>
+                                        <p>{req.desiredClass.course_number} - Sec {req.desiredClass.section_number}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center gap-4 mt-4">
+                                    <button 
+                                        on:click={() => voteRequest(req.id, true)}
+                                        class="flex items-center gap-1 {req.upvotedBy.includes($profile.student_id) ? 'text-green-600' : 'text-gray-600'} hover:text-green-700"
+                                    >
+                                        ▲ {req.upvotedBy.length - req.downvotedBy.length}
+                                    </button>
+                                    <button 
+                                        on:click={() => voteRequest(req.id, false)}
+                                        class="flex items-center gap-1 {req.downvotedBy.includes($profile.student_id) ? 'text-red-600' : 'text-gray-600'} hover:text-red-700"
+                                    >
+                                        ▼
+                                    </button>
+                                    <button 
+                                        on:click={() => toggleFavorite(req.id)}
+                                        class="flex items-center gap-1 text-yellow-600 hover:text-yellow-700"
+                                    >
+                                        {req.favorites.includes($profile.student_id) ? '★' : '☆'}
+                                    </button>
+                                    {#if req.ownerId === $profile.student_id}
+                                        <button 
+                                            on:click={() => deleteRequest(req.id)}
+                                            class="ml-auto text-red-600 hover:text-red-700"
+                                        >
+                                            <FaTrash icon={faTrash} class="text-lg" />
+                                        </button>
+                                    {/if}
+                                </div>
+                            </div>
+                        </li>
+                    {/each}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {/if}
   </div>
 </div>
 

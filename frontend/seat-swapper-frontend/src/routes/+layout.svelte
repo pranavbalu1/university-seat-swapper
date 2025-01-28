@@ -33,8 +33,9 @@
   });
 </script>
 
-<Navbar />  <!-- Add the Navbar at the top -->
 
-<main class="bg-background min-h-screen">  <!-- Add a background color if necessary -->
+
+<main class="bg-background h-svh">  <!-- Add a background color if necessary -->
+  <Navbar />  <!-- Add the Navbar at the top -->
   {@render children()}  <!-- This renders the content of each page -->
 </main>

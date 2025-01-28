@@ -19,7 +19,7 @@ class StudentClass(models.Model):
     section_number = models.CharField(max_length=10)
     class_name = models.CharField(max_length=255)
     instructor = models.CharField(max_length=255)
-    start_time = models.DateTimeField()
+    start_time = models.CharField(max_length=255)
     days = models.JSONField(default=list)
 
     class Meta:

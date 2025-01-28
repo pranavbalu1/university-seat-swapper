@@ -28,7 +28,7 @@ export async function getSchedule() {
 
 export async function add_class(classData: {course_number: '', section_number: '', class_name: '', instructor: '', start_time: '', days: []}){
     const { token } = get(authStore); // Get token from the store
-
+    console.log(classData);
     if (!token) {
         throw new Error('User is not authenticated');
     }
