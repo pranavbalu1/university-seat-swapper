@@ -272,7 +272,7 @@
     });
 </script>
 
-<div class="flex flex-col justify-center items-center p-1 pt-[4%]">
+<div class="flex flex-col justify-center items-center p-1  h-[92%]">
   <!-- Tab navigation -->
   <div class="bg-background bg-opacity-80 flex justify-left gap-20 mb-2 mt-4 w-[80%] max-w-[80rem] px-8 py-4 rounded-2xl border-2 border-gray-400">
     <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => activeTab.set('profile')} class:underline={$activeTab === 'profile'}>
@@ -551,6 +551,8 @@
     </div>
     {/if}
   </div>
+
+
 </div>
 
 <style>
