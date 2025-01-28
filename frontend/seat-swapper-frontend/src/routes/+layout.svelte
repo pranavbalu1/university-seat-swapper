@@ -35,7 +35,13 @@
 
 
 
-<main class="bg-background h-svh">  <!-- Add a background color if necessary -->
+<main 
+  class="h-svh bg-stacked-waves bg-cover bg-no-repeat">
   <Navbar />  <!-- Add the Navbar at the top -->
   {@render children()}  <!-- This renders the content of each page -->
 </main>
+
+<style>
+
+
+</style>

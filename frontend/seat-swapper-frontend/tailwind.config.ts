@@ -17,10 +17,15 @@ export default {
       colors: {
         primary: '#232323',
         secondary: '#bbbbba',
-        background: '#FFFFFF',
+        background: '#f2f2f2',
         button:'#81f3ff',
         buttonHover: '#3B7FBC',
-        navbar: '#202121',  // Add this new color for navbar
+        navbar: '#202121',
+
+      },
+      backgroundImage: {
+        'stacked-waves': "url('/stacked_waves.svg')",
+        'stacked-waves-2': "url('/stacked-waves-1.svg')",
       },
     },
   },
