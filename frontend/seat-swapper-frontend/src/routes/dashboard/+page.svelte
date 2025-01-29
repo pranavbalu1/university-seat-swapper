@@ -6,6 +6,7 @@
     import { faEdit, faTrash } from '@fortawesome/free-solid-svg-icons'; // Import icon definitions
     import { getSchedule, add_class, remove_class } from '$lib/api/schedule';
     import { onMount } from 'svelte';
+	import { getAllClassTradeRequests } from '$lib/api/requests';
 
     interface Profile {
     student_id: string;
@@ -126,10 +127,8 @@
         id: string;
         ownerId: string;
         offeredClass: ClassData;
-        desiredClass: {
-            course_number: string;
-            section_number: string;
-        };
+        desiredClass_course_number: string;
+        desiredClass_section_number: string;
         status: 'open' | 'closed' | 'pending';
         upvotedBy: string[];  // Changed from votes
         downvotedBy: string[]; // New property
@@ -157,31 +156,18 @@
     });
 
     let filterCriteria = writable<FilterCriteria>({});
+
+    // Load requests from the backend
+    async function loadRequests() {
+        try {
+            const reqs = await getAllClassTradeRequests();
+            requests.set(reqs);
+            console.log('requests from dashboard: ', requests);
+        } catch (error) {
+            console.error('Error loading requests:', error);
+        }
+    }
     
-    onMount(() => {
-        // Initialize mock requests
-        requests.set([
-            {
-                id: '1',
-                ownerId: 'user123',
-                offeredClass: {
-                    course_number: 'MATH101',
-                    section_number: '01',
-                    class_name: 'Calculus I',
-                    instructor: 'Dr. Smith',
-                    start_time: '10:00',
-                    days: ['Mon', 'Wed']
-                },
-                desiredClass: { course_number: 'PHYS201', section_number: '02' },
-                status: 'open',
-                upvotedBy: ['user123'], // Example existing votes
-                downvotedBy: [],
-                favorites: [],
-                createdAt: new Date()
-            },
-            // Add more mock requests as needed
-        ]);
-    });
 
     // Request actions
     function createRequest() {
@@ -193,10 +179,8 @@
                 id: Date.now().toString(),
                 ownerId: $profile.student_id,
                 offeredClass: { ...offeredClass },
-                desiredClass: {
-                    course_number: $newRequest.desiredCourseNumber,
-                    section_number: $newRequest.desiredSectionNumber
-                },
+                desiredClass_course_number: $newRequest.desiredCourseNumber,
+                desiredClass_section_number: $newRequest.desiredSectionNumber,
                 status: 'open',
                 upvotedBy: [],
                 downvotedBy: [],
@@ -269,6 +253,7 @@
     onMount(() => {
         loadProfile();
         loadSchedule();
+        loadRequests();
     });
 </script>
 
@@ -479,7 +464,7 @@
             <div class="no-scrollbar overflow-y-auto h-[40rem] px-1">
                 <ul class="grid grid-cols-1 gap-6">
                     {#each $requests.filter(req => 
-                        (!$filterCriteria.courseNumber || req.desiredClass.course_number.includes($filterCriteria.courseNumber)) &&
+                        (!$filterCriteria.courseNumber || req.desiredClass_course_number.includes($filterCriteria.courseNumber)) &&
                         (!$filterCriteria.className || req.offeredClass.class_name.includes($filterCriteria.className)) &&
                         (!$filterCriteria.instructor || req.offeredClass.instructor.includes($filterCriteria.instructor)) &&
                         (!$filterCriteria.status || req.status === $filterCriteria.status)
@@ -491,7 +476,7 @@
                                 <div class="flex justify-between items-start mb-2">
                                     <div>
                                         <p class="text-lg font-semibold">{req.offeredClass.class_name}</p>
-                                        <p class="text-sm text-gray-600">Offered by {req.ownerId === $profile.student_id ? 'You' : 'User ' + req.ownerId.slice(-4)}</p>
+                                        <p class="text-sm text-gray-600">Offered by {req.ownerId === $profile.student_id ? 'You' : 'User ' + "implement user name here"}</p>
                                     </div>
                                     <span class="px-2 py-1 text-sm rounded-full 
                                         {req.status === 'open' ? 'bg-green-100 text-green-800' :
@@ -510,7 +495,7 @@
                                     </div>
                                     <div>
                                         <p class="font-semibold">Desired:</p>
-                                        <p>{req.desiredClass.course_number} - Sec {req.desiredClass.section_number}</p>
+                                        <p>{req.desiredClass_course_number} - Sec {req.desiredClass_section_number}</p>
                                     </div>
                                 </div>
                                 

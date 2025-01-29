@@ -23,6 +23,7 @@ export async function getSchedule() {
     }
 
     const data = await response.json();
+    console.log("from schedule.ts: ", data);
     return data;
 }
 

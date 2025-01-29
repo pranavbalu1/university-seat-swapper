@@ -23,7 +23,9 @@ export async function getAllClassTradeRequests() {
         throw new Error(error.detail || 'Failed to fetch class trade requests.');
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log("from requests.ts: ", data);
+    return data;
 }
 
 // Create a new class trade request
