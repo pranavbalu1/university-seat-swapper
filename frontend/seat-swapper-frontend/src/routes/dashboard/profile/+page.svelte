@@ -35,6 +35,7 @@
         try {
             await createOrUpdateProfile($profileStore);
             profileStore.set($profileStore);
+            console.log('Profile saved:', $profileStore);
         } catch (error) {
             console.error('Error saving profile:', error);
         }

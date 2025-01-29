@@ -118,7 +118,6 @@ export async function deleteClassTradeRequest(requestId: number) {
         method: 'DELETE',
         headers: {
             'Authorization': `Token ${token}`,
-            'Content-Type': 'application/json',
         },
     });
 
@@ -127,11 +126,16 @@ export async function deleteClassTradeRequest(requestId: number) {
         throw new Error(error.detail || 'Failed to delete class trade request.');
     }
 
+    // Handle 204 No Content without parsing JSON
+    if (response.status === 204) {
+        return { detail: 'Request deleted successfully.' };
+    }
+
     return response.json();
 }
 
 // Filter class trade requests
-export async function filterClassTradeRequests(filters: { course_number?: string; class_name?: string; instructor?: string; status?: string }) {
+export async function filterClassTradeRequests(filters: { course_number?: string; class_name?: string; instructor?: string; status?: string}) {
     const { token } = get(authStore); // Get token from the store
 
     if (!token) {

@@ -8,20 +8,20 @@
     import { onMount } from 'svelte';
 	  import { goto } from '$app/navigation';
     import { profileStore } from '../../../stores/profilestore';
-    import { scheduleStore } from '../../../stores/schedulestore';
+    import { type ClassData, scheduleStore } from '../../../stores/schedulestore';
     
 
-    interface ClassData {
-    course_number: string;
-    section_number: string;
-    class_name: string;
-    instructor: string;
-    start_time: string;
-    days: string[];
-    }
 
     let activeTab = writable<'profile' | 'schedule' | 'requests'>('schedule');
-
+    let classData = writable<ClassData>({
+        id: 0,
+        course_number: '',
+        section_number: '',
+        class_name: '',
+        instructor: '',
+        start_time: '',
+        days: [],
+    });
     function navigateTo(tab: 'profile' | 'schedule' | 'requests') {
         activeTab.set(tab);
         if (tab === 'profile') {
@@ -33,21 +33,6 @@
             goto('/dashboard/requests');
         }
     }
-
-    // Profile and class data stores
-    let profile = profileStore;
-
-
-
-    let classData = writable<ClassData>({
-    course_number: '',
-    section_number: '',
-    class_name: '',
-    instructor: '',
-    start_time: '',
-    days: [],
-    });
-
 
     // get class data from the backend
     async function loadSchedule() {
@@ -89,6 +74,7 @@
       await add_class(newClass);
       scheduleStore.update((current) => [...current, newClass]);
       classData.set({
+        id: 0 ,
         course_number: '',
         section_number: '',
         class_name: '',

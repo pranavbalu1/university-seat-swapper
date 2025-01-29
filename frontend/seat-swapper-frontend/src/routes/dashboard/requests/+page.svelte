@@ -12,24 +12,15 @@
         voteOnRequest, 
         toggleFavoriteRequest, 
         deleteClassTradeRequest,
-        filterClassTradeRequests
-    } from '$lib/api/requests';
-    
-    interface Profile {
-        student_id: string;
-        full_name: string;
-        email: string;
-    }
+        filterClassTradeRequests,
 
-    interface ClassData {
-        id: number;
-        course_number: string;
-        section_number: string;
-        class_name: string;
-        instructor: string;
-        start_time: string;
-        days: string[];
-    }
+		getFavoriteClassTradeRequests
+
+    } from '$lib/api/requests';
+	import { goto } from '$app/navigation';
+    import { profileStore as profile } from '../../../stores/profilestore';
+    import { type ClassData } from '../../../stores/schedulestore';
+    import { scheduleStore as schedule } from '../../../stores/schedulestore';
 
     interface ClassTradeRequest {
         id: number;
@@ -45,22 +36,25 @@
         created_at: string;
     }
 
+    let favorite = writable(false);
+
     // Tabs state
     let activeTab = writable<'profile' | 'schedule' | 'requests'>('requests');
-
+    // Handle tab navigation
+    function navigateTo(tab: 'profile' | 'schedule' | 'requests') {
+        activeTab.set(tab);
+        if (tab === 'profile') {
+            goto('/dashboard/profile');
+        } else
+        if (tab === 'schedule') {
+            goto('/dashboard/schedule');
+        } else if (tab === 'requests') {
+            goto('/dashboard/requests');
+        }
+    }
     // Stores
-    let profile = writable<Profile>({ student_id: '', full_name: '', email: '' });
-    let schedule = writable<ClassData[]>([]);
     let requests = writable<ClassTradeRequest[]>([]);
-    let classData = writable<ClassData>({ 
-        id: 0,
-        course_number: '',
-        section_number: '',
-        class_name: '',
-        instructor: '',
-        start_time: '',
-        days: []
-    });
+
 
     let newRequest = writable<{
         offeredClassId: number | null;
@@ -77,6 +71,7 @@
         class_name?: string;
         instructor?: string;
         status?: string;
+        
     }>({});
 
     async function loadProfile() {
@@ -92,11 +87,11 @@
         try {
             const scheduleData = await getSchedule();
             schedule.set(scheduleData);
+
         } catch (error) {
             console.error('Error loading schedule:', error);
         }
     }
-
     async function loadRequests() {
         try {
             const reqs = await getAllClassTradeRequests();
@@ -142,13 +137,28 @@
         }
     }
 
+    // Add this function in the <script> section
+    async function handleFavoriteFilter() {
+        try {
+            if ($favorite) {
+                const favorites = await getFavoriteClassTradeRequests();
+                requests.set(favorites);
+            } else {
+                loadRequests();
+            }
+        } catch (error) {
+            console.error('Error filtering favorites:', error);
+        }
+    }
+
     async function deleteRequest(requestId: number) {
         try {
             await deleteClassTradeRequest(requestId);
-            await loadRequests();
+            
         } catch (error) {
             console.error('Error deleting request:', error);
         }
+        await loadRequests();
     }
 
     async function applyFilters() {
@@ -164,20 +174,22 @@
         loadProfile();
         loadSchedule();
         loadRequests();
+        console.log('Profile from request:', $profile);
+        console.log('Schedule from request:', $schedule);
     });
 </script>
 
 <div class="flex flex-col justify-center items-center p-1 h-[92%]">
     <!-- Tab navigation -->
     <div class="bg-background bg-opacity-80 flex justify-left gap-20 mb-2 mt-4 w-[80%] max-w-[80rem] px-8 py-4 rounded-2xl border-2 border-gray-400">
-        <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => activeTab.set('profile')} class:underline={$activeTab === 'profile'}>
-            Profile
+        <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => navigateTo('profile')} class:underline={$activeTab === 'profile'}>
+        Profile
         </button>
-        <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => activeTab.set('schedule')} class:underline={$activeTab === 'schedule'}>
-            Schedule
+        <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => navigateTo('schedule')} class:underline={$activeTab === 'schedule'}>
+        Schedule
         </button>
-        <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => activeTab.set('requests')} class:underline={$activeTab === 'requests'}>
-            Requests
+        <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => navigateTo('requests')} class:underline={$activeTab === 'requests'}>
+        Requests
         </button>
     </div>
 
@@ -194,7 +206,7 @@
                     <select bind:value={$newRequest.offeredClassId} class="border rounded-md px-2 py-1">
                         <option value={null}>Select a class</option>
                         {#each $schedule as cls}
-                            <option value={cls.id}>{cls.class_name} - {cls.course_number}</option>
+                            <option value={cls.id}> {cls.class_name} </option>
                         {/each}
                     </select>
                 </label>
@@ -226,6 +238,16 @@
                             <option value="pending">Pending</option>
                             <option value="closed">Closed</option>
                         </select>
+                        <div class="flex items-center gap-2 mt-2">
+                            <input 
+                                type="checkbox" 
+                                id="favoriteFilter" 
+                                bind:checked={$favorite} 
+                                on:change={handleFavoriteFilter}
+                                class="w-4 h-4"
+                            />
+                            <label for="favoriteFilter" class="text-sm">Show only favorited requests</label>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -267,8 +289,9 @@
                                     
                                     <div class="flex items-center gap-4 mt-4">
                                         <button on:click={() => voteRequest(req.id, true)} class="flex items-center gap-1 {req.upvoted_by.includes($profile.student_id) ? 'text-green-600' : 'text-gray-600'} hover:text-green-700">
-                                            ▲ {req.upvoted_by.length - req.downvoted_by.length}
+                                            ▲ 
                                         </button>
+                                        <p>{req.upvoted_by.length - req.downvoted_by.length}</p>
                                         <button on:click={() => voteRequest(req.id, false)} class="flex items-center gap-1 {req.downvoted_by.includes($profile.student_id) ? 'text-red-600' : 'text-gray-600'} hover:text-red-700">
                                             ▼
                                         </button>
