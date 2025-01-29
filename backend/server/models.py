@@ -1,5 +1,6 @@
 from django.db import models # type: ignore 
 from django.contrib.auth.models import User # type: ignore
+from django.utils import timezone  # type: ignore
 
 # Extend the User model for additional profile data
 class StudentProfile(models.Model):
@@ -30,20 +31,16 @@ class StudentClass(models.Model):
 
 
 class ClassTradeRequest(models.Model):
-    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="trade_requests")
-    offered_class = models.ForeignKey(StudentClass, on_delete=models.CASCADE, related_name="offered_class")
-    requested_class = models.ForeignKey(StudentClass, on_delete=models.CASCADE, related_name="requested_class")
-    status = models.CharField(max_length=20, choices=[('open', 'Open'), ('accepted', 'Accepted'), ('closed', 'Closed')], default='open')
-    upvotes = models.PositiveIntegerField(default=0)
-    downvotes = models.PositiveIntegerField(default=0)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='requests', default=None)
+    owner_student_id = models.CharField(max_length=20, default="-1")  
+    offered_class = models.ForeignKey(StudentClass, on_delete=models.CASCADE, related_name='offered_requests')
+    desired_class_number = models.CharField(max_length=100, default="Unknown")
+    desired_section_number = models.CharField(max_length=10, default="-1")
+    status = models.CharField(max_length=10, choices=[('open', 'Open'), ('closed', 'Closed'), ('pending', 'Pending')], default='open')
+    upvoted_by = models.ManyToManyField(User, related_name='upvoted_requests', blank=True)
+    downvoted_by = models.ManyToManyField(User, related_name='downvoted_requests', blank=True)
     favorites = models.ManyToManyField(User, related_name='favorite_requests', blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"Request by {self.requester.username} ({self.status})"
-
-class AcceptedRequest(models.Model):
-    request = models.OneToOneField(ClassTradeRequest, on_delete=models.CASCADE)
-    accepted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accepted_requests')
-
-    def __str__(self):
-        return f"Accepted by {self.accepted_by.username}"
+        return f"Request {self.id} - {self.offered_class.class_name} for {self.desired_class_number}-{self.desired_section_number}"

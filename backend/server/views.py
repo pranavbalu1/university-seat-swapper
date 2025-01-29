@@ -10,8 +10,10 @@ from django.shortcuts import get_object_or_404 # type: ignore
 from django.contrib.auth.password_validation import validate_password # type: ignore
 from django.db import IntegrityError # type: ignore
 
-from .serializers import UserSerializer, StudentProfileSerializer, StudentClassSerializer, ClassTradeRequestSerializer, AcceptedRequestSerializer
-from .models import StudentProfile, StudentClass, ClassTradeRequest, AcceptedRequest
+from .serializers import UserSerializer, StudentProfileSerializer, StudentClassSerializer
+from .models import StudentProfile, StudentClass
+from .serializers import ClassTradeRequestSerializer
+from .models import ClassTradeRequest
 
 
 
@@ -53,6 +55,23 @@ def register(request):
 def test_token(request):
     return Response(f"Token validation successful for {request.user.username}", status=status.HTTP_200_OK)
 
+#Get Profile by User ID
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_profile_by_user_id(request, user_id):
+    # Get the user by user_id or return 404
+    user = get_object_or_404(User, id=user_id)
+    
+    # Get the user's profile or handle missing profile
+    try:
+        profile = user.profile  # Access via OneToOne relationship
+    except StudentProfile.DoesNotExist:
+        return Response({"detail": "Profile not found for this user."}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Serialize and return the profile data
+    serializer = StudentProfileSerializer(profile)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 # Create or update student profile
 @api_view(['POST'])
@@ -135,122 +154,134 @@ def get_classes(request):
     serializer = StudentClassSerializer(classes, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-# Create or update a class trade request
-@api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def create_trade_request(request):
-    data = request.data
-    offered_class = get_object_or_404(StudentClass, id=data['offered_class_id'])
-    requested_class = get_object_or_404(StudentClass, id=data['requested_class_id'])
-    
-    if offered_class.user == request.user:
-        trade_request = ClassTradeRequest.objects.create(
-            requester=request.user,
-            offered_class=offered_class,
-            requested_class=requested_class
-        )
-        serializer = ClassTradeRequestSerializer(trade_request)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response({"detail": "You cannot offer your own class."}, status=status.HTTP_400_BAD_REQUEST)
-
-# Upvote a trade request
-@api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def upvote_request(request, trade_request_id):
-    trade_request = get_object_or_404(ClassTradeRequest, id=trade_request_id)
-
-    if request.user in trade_request.favorites.all():
-        return Response({"detail": "You already favorited this request."}, status=status.HTTP_400_BAD_REQUEST)
-
-    trade_request.upvotes += 1
-    trade_request.save()
-    return Response(ClassTradeRequestSerializer(trade_request).data, status=status.HTTP_200_OK)
-
-# Downvote a trade request
-@api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def downvote_request(request, trade_request_id):
-    trade_request = get_object_or_404(ClassTradeRequest, id=trade_request_id)
-
-    trade_request.downvotes += 1
-    trade_request.save()
-    return Response(ClassTradeRequestSerializer(trade_request).data, status=status.HTTP_200_OK)
-
-# Favorite a trade request
-@api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def favorite_request(request, trade_request_id):
-    trade_request = get_object_or_404(ClassTradeRequest, id=trade_request_id)
-
-    if request.user in trade_request.favorites.all():
-        return Response({"detail": "You already favorited this request."}, status=status.HTTP_400_BAD_REQUEST)
-
-    trade_request.favorites.add(request.user)
-    return Response(ClassTradeRequestSerializer(trade_request).data, status=status.HTTP_200_OK)
-
-# Accept a trade request
-@api_view(['POST'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def accept_trade_request(request, trade_request_id):
-    trade_request = get_object_or_404(ClassTradeRequest, id=trade_request_id)
-
-    # Ensure the user meets the conditions for the request
-    if trade_request.requester == request.user:
-        return Response({"detail": "You cannot accept your own request."}, status=status.HTTP_400_BAD_REQUEST)
-
-    accepted_request = AcceptedRequest.objects.create(request=trade_request, accepted_by=request.user)
-    trade_request.status = 'accepted'
-    trade_request.save()
-
-    return Response(AcceptedRequestSerializer(accepted_request).data, status=status.HTTP_200_OK)
-
-# Get all trade requests
+#Get Class Trade Requests
 @api_view(['GET'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def get_trade_requests(request):
-    trade_requests = ClassTradeRequest.objects.filter(status='open')
+def get_all_class_trade_requests(request):
+    # Retrieve all class trade requests
+    trade_requests = ClassTradeRequest.objects.all()
     serializer = ClassTradeRequestSerializer(trade_requests, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-# Remove a trade request created by the current user
-@api_view(['DELETE'])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
-def remove_trade_request(request, trade_request_id):
-    try:
-        trade_request = ClassTradeRequest.objects.get(id=trade_request_id, requester=request.user)
-        trade_request.delete()
-        return Response({"detail": "Trade request deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
-    except ClassTradeRequest.DoesNotExist:
-        return Response({"detail": "Request not found or you do not have permission to delete this request."}, status=status.HTTP_404_NOT_FOUND)
-
-
-# Mark a trade request as accepted by the user who created it (self-acceptance)
+# Create Class Trade Request
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def mark_request_accepted(request, trade_request_id):
+def create_class_trade_request(request):
+    data = request.data
+    user = request.user
+
+    # Get the user's profile
     try:
-        trade_request = ClassTradeRequest.objects.get(id=trade_request_id, requester=request.user)
+        profile = StudentProfile.objects.get(user=user)
+    except StudentProfile.DoesNotExist:
+        return Response(
+            {"detail": "Complete your profile before creating trade requests."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
-        # Mark as accepted if the request is open
-        if trade_request.status == 'open':
-            trade_request.status = 'accepted'
-            trade_request.save()
+    # Get the offered class (validate ownership)
+    offered_class = get_object_or_404(StudentClass, id=data['offered_class_id'], user=user)
+    
+    # Create the ClassTradeRequest with student_id from profile
+    trade_request = ClassTradeRequest.objects.create(
+        owner=user,
+        owner_student_id=profile.student_id,  # Auto-populate from profile
+        offered_class=offered_class,
+        desired_class_number=data['desired_class_number'],
+        desired_section_number=data['desired_section_number'],
+    )
 
-            # Create AcceptedRequest record
-            AcceptedRequest.objects.create(request=trade_request, accepted_by=request.user)
+    serializer = ClassTradeRequestSerializer(trade_request)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-            return Response(ClassTradeRequestSerializer(trade_request).data, status=status.HTTP_200_OK)
-        else:
-            return Response({"detail": "Request has already been accepted or closed."}, status=status.HTTP_400_BAD_REQUEST)
-    except ClassTradeRequest.DoesNotExist:
-        return Response({"detail": "Request not found or you do not have permission to accept this request."}, status=status.HTTP_404_NOT_FOUND)
+
+#Vote on a Class Trade Request
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def vote_request(request, request_id):
+    trade_request = get_object_or_404(ClassTradeRequest, id=request_id)
+    user = request.user
+    upvote = request.data.get('upvote', False)
+
+    if upvote:
+        if user in trade_request.downvoted_by.all():
+            trade_request.downvoted_by.remove(user)
+        if user not in trade_request.upvoted_by.all():
+            trade_request.upvoted_by.add(user)
+    else:
+        if user in trade_request.upvoted_by.all():
+            trade_request.upvoted_by.remove(user)
+        if user not in trade_request.downvoted_by.all():
+            trade_request.downvoted_by.add(user)
+
+    #if upvote is null, remove the user from both upvoted_by and downvoted_by
+    if upvote is None:
+        if user in trade_request.upvoted_by.all():
+            trade_request.upvoted_by.remove(user)
+        if user in trade_request.downvoted_by.all():
+            trade_request.downvoted_by.remove(user)
+
+    serializer = ClassTradeRequestSerializer(trade_request)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+#Toggle Favorite on a Request:
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def toggle_favorite(request, request_id):
+    trade_request = get_object_or_404(ClassTradeRequest, id=request_id)
+    user = request.user
+
+    if user in trade_request.favorites.all():
+        trade_request.favorites.remove(user)
+    else:
+        trade_request.favorites.add(user)
+
+    serializer = ClassTradeRequestSerializer(trade_request)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+#Delete a Class Exchange Request:
+@api_view(['DELETE'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_class_trade_request(request, request_id):
+    trade_request = get_object_or_404(ClassTradeRequest, id=request_id)
+    if trade_request.owner != request.user:
+        return Response({"detail": "You do not have permission to delete this request."}, status=status.HTTP_403_FORBIDDEN)
+    
+    trade_request.delete()
+    return Response({"detail": "Request deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+#Filter Class Exchange Requests:
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def list_class_trade_requests(request):
+    filter_criteria = request.query_params
+    requests = ClassTradeRequest.objects.all()
+
+    if 'course_number' in filter_criteria:
+        requests = requests.filter(desired_class_number=filter_criteria['course_number'])
+    if 'class_name' in filter_criteria:
+        requests = requests.filter(offered_class__class_name__icontains=filter_criteria['class_name'])
+    if 'instructor' in filter_criteria:
+        requests = requests.filter(offered_class__instructor__icontains=filter_criteria['instructor'])
+    if 'status' in filter_criteria:
+        requests = requests.filter(status=filter_criteria['status'])
+    
+    serializer = ClassTradeRequestSerializer(requests, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+#Get Favorite Class Exchange Requests:
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_favorite_class_trade_requests(request):
+    user = request.user
+    # Retrieve all class trade requests that the user has favorited
+    favorite_requests = ClassTradeRequest.objects.filter(favorites=user)
+    serializer = ClassTradeRequestSerializer(favorite_requests, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)

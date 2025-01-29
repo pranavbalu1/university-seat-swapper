@@ -23,5 +23,5 @@ Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
 
 ### Get User Profile
 GET http://127.0.0.1:8000/api/profile/get_profile
-Authorization: Token cf2fa26792d3e7a24b45927a9c241c52b2da217f
+Authorization: Token 80713f237b86a2d4f9709ab69485967ce19d86f7
 
