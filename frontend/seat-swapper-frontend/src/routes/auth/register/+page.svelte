@@ -17,7 +17,7 @@
             const { token, user } = await register(username, password); // Call the register API
             // Store the token and user info if needed (e.g., in a global store)
             console.log('Registration successful:', user);
-            goto('/dashboard'); // Navigate to the dashboard on successful registration
+            goto('/dashboard/profile'); // Navigate to the dashboard on successful registration
         } catch (error: any) {
             errorMessage = error.message; // Display error message if registration fails
         }
