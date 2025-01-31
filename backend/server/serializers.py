@@ -1,7 +1,6 @@
 from rest_framework import serializers # type: ignore
 from django.contrib.auth.models import User # type: ignore
-from .models import StudentProfile, StudentClass, ClassTradeRequest, AcceptedRequest
-
+from .models import StudentProfile, StudentClass, ClassTradeRequest
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -20,19 +19,8 @@ class StudentClassSerializer(serializers.ModelSerializer):
 
 
 class ClassTradeRequestSerializer(serializers.ModelSerializer):
-    offered_class = StudentClassSerializer()
-    requested_class = StudentClassSerializer()
-    requester = UserSerializer()
-
+    offered_class = StudentClassSerializer(read_only=True)
+    
     class Meta:
         model = ClassTradeRequest
-        fields = ['id', 'requester', 'offered_class', 'requested_class', 'status', 'upvotes', 'downvotes', 'favorites']
-
-
-class AcceptedRequestSerializer(serializers.ModelSerializer):
-    request = ClassTradeRequestSerializer()
-    accepted_by = UserSerializer()
-
-    class Meta:
-        model = AcceptedRequest
-        fields = ['request', 'accepted_by']
+        fields = ['id', 'owner', 'owner_student_id', 'offered_class', 'desired_class_number', 'desired_section_number', 'status', 'upvoted_by', 'downvoted_by', 'favorites', 'created_at']

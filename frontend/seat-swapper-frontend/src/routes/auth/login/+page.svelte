@@ -18,7 +18,7 @@
     };
 </script>
 
-<div class="min-h-screen bg-background flex flex-col">
+<div class=" bg-stacked-waves-2 bg-cover bg-no-repeat flex flex-col justify-center items-center h-[92%]  ">
     <!-- Login Section -->
     <div class="flex-grow flex flex-col justify-center items-center px-4 ">
         <h1 class="text-5xl font-bold text-center text-title mb-6">Log In</h1>

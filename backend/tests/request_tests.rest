@@ -1,0 +1,52 @@
+# Create a Class Trade Request
+POST http://127.0.0.1:8000/api/class_trade_requests/create_class_trade_request
+Content-Type: application/json
+Authorization: Token 80713f237b86a2d4f9709ab69485967ce19d86f7
+
+{
+  "offered_class_id": 28,
+  "desired_class_number": "CS201",
+  "desired_section_number": "5"
+}
+
+###
+
+# Vote on a Class Trade Request
+POST http://127.0.0.1:8000/api/class_trade_requests/4/vote/
+Content-Type: application/json
+Authorization: Token 80713f237b86a2d4f9709ab69485967ce19d86f7
+
+{
+  "upvote": null
+}
+
+###
+
+# Toggle Favorite on a Request
+POST http://127.0.0.1:8000/api/class_trade_requests/2/favorite/
+Content-Type: application/json
+Authorization: Token 80713f237b86a2d4f9709ab69485967ce19d86f7
+
+###
+
+# Delete a Class Trade Request
+DELETE http://127.0.0.1:8000/api/class_trade_requests/1/delete/
+Authorization: Token 80713f237b86a2d4f9709ab69485967ce19d86f7
+
+###
+
+# List Filtered Class Trade Requests
+GET http://127.0.0.1:8000/api/class_trade_requests/filtered?course_number=CS101&status=open
+Authorization: Token 80713f237b86a2d4f9709ab69485967ce19d86f7
+
+###
+
+# Get All Class Trade Requests
+GET http://127.0.0.1:8000/api/class_trade_requests/all/
+Authorization: Token 80713f237b86a2d4f9709ab69485967ce19d86f7
+
+###
+
+# Get Favorite Class Trade Requests
+GET http://127.0.0.1:8000/api/class_trade_requests/favorites/
+Authorization: Token 80713f237b86a2d4f9709ab69485967ce19d86f7
