@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { writable } from 'svelte/store';
+    import { writable, derived } from 'svelte/store';
     import { getProfile, createOrUpdateProfile } from '$lib/api/profile';
     import FaEdit from 'svelte-fa';
     import FaTrash from 'svelte-fa';
@@ -11,13 +11,9 @@
         createClassTradeRequest, 
         voteOnRequest, 
         toggleFavoriteRequest, 
-        deleteClassTradeRequest,
-        filterClassTradeRequests,
-
-		getFavoriteClassTradeRequests
-
+        deleteClassTradeRequest
     } from '$lib/api/requests';
-	import { goto } from '$app/navigation';
+    import { goto } from '$app/navigation';
     import { profileStore as profile } from '../../../stores/profilestore';
     import { type ClassData } from '../../../stores/schedulestore';
     import { scheduleStore as schedule } from '../../../stores/schedulestore';
@@ -37,24 +33,8 @@
     }
 
     let favorite = writable(false);
-
-    // Tabs state
     let activeTab = writable<'profile' | 'schedule' | 'requests'>('requests');
-    // Handle tab navigation
-    function navigateTo(tab: 'profile' | 'schedule' | 'requests') {
-        activeTab.set(tab);
-        if (tab === 'profile') {
-            goto('/dashboard/profile');
-        } else
-        if (tab === 'schedule') {
-            goto('/dashboard/schedule');
-        } else if (tab === 'requests') {
-            goto('/dashboard/requests');
-        }
-    }
-    // Stores
     let requests = writable<ClassTradeRequest[]>([]);
-
 
     let newRequest = writable<{
         offeredClassId: number | null;
@@ -71,8 +51,43 @@
         class_name?: string;
         instructor?: string;
         status?: string;
-        
     }>({});
+
+    const filteredRequests = derived(
+        [requests, filterCriteria, favorite, profile],
+        ([$requests, $filterCriteria, $favorite, $profile]) => {
+            if (!$profile) return [];
+            
+            return $requests.filter(req => {
+                const courseMatch = !$filterCriteria.course_number || 
+                    req.offered_class.course_number.includes($filterCriteria.course_number);
+                
+                const classNameMatch = !$filterCriteria.class_name || 
+                    req.offered_class.class_name.toLowerCase().includes($filterCriteria.class_name.toLowerCase());
+                
+                const instructorMatch = !$filterCriteria.instructor || 
+                    req.offered_class.instructor.toLowerCase().includes($filterCriteria.instructor.toLowerCase());
+                
+                const statusMatch = !$filterCriteria.status || 
+                    req.status === $filterCriteria.status;
+                
+                const favoriteMatch = !$favorite || req.favorites.includes($profile.student_id);
+
+                return courseMatch && classNameMatch && instructorMatch && statusMatch && favoriteMatch;
+            });
+        }
+    );
+
+    function navigateTo(tab: 'profile' | 'schedule' | 'requests') {
+        activeTab.set(tab);
+        if (tab === 'profile') {
+            goto('/dashboard/profile');
+        } else if (tab === 'schedule') {
+            goto('/dashboard/schedule');
+        } else if (tab === 'requests') {
+            goto('/dashboard/requests');
+        }
+    }
 
     async function loadProfile() {
         try {
@@ -87,11 +102,11 @@
         try {
             const scheduleData = await getSchedule();
             schedule.set(scheduleData);
-
         } catch (error) {
             console.error('Error loading schedule:', error);
         }
     }
+
     async function loadRequests() {
         try {
             const reqs = await getAllClassTradeRequests();
@@ -111,7 +126,6 @@
                 $newRequest.desiredSectionNumber
             );
             
-            // Reset form and reload requests
             newRequest.set({ offeredClassId: null, desiredClassNumber: '', desiredSectionNumber: '' });
             await loadRequests();
         } catch (error) {
@@ -137,36 +151,12 @@
         }
     }
 
-    // Add this function in the <script> section
-    async function handleFavoriteFilter() {
-        try {
-            if ($favorite) {
-                const favorites = await getFavoriteClassTradeRequests();
-                requests.set(favorites);
-            } else {
-                loadRequests();
-            }
-        } catch (error) {
-            console.error('Error filtering favorites:', error);
-        }
-    }
-
     async function deleteRequest(requestId: number) {
         try {
             await deleteClassTradeRequest(requestId);
-            
+            await loadRequests();
         } catch (error) {
             console.error('Error deleting request:', error);
-        }
-        await loadRequests();
-    }
-
-    async function applyFilters() {
-        try {
-            const filtered = await filterClassTradeRequests($filterCriteria);
-            requests.set(filtered);
-        } catch (error) {
-            console.error('Error filtering requests:', error);
         }
     }
 
@@ -174,30 +164,25 @@
         loadProfile();
         loadSchedule();
         loadRequests();
-        console.log('Profile from request:', $profile);
-        console.log('Schedule from request:', $schedule);
     });
 </script>
 
 <div class="flex flex-col justify-center items-center p-1 h-[92%]">
-    <!-- Tab navigation -->
     <div class="bg-background bg-opacity-80 flex justify-left gap-20 mb-2 mt-4 w-[80%] max-w-[80rem] px-8 py-4 rounded-2xl border-2 border-gray-400">
         <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => navigateTo('profile')} class:underline={$activeTab === 'profile'}>
-        Profile
+            Profile
         </button>
         <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => navigateTo('schedule')} class:underline={$activeTab === 'schedule'}>
-        Schedule
+            Schedule
         </button>
         <button class="text-2xl hover:underline underline-offset-2 decoration-2 text-primary" on:click={() => navigateTo('requests')} class:underline={$activeTab === 'requests'}>
-        Requests
+            Requests
         </button>
     </div>
 
     <div class="bg-background bg-opacity-80 flex flex-col justify-center items-center h-[45rem] w-[80%] max-w-[80rem] px-8 py-4 rounded-2xl border-2 border-gray-400">
-        <!-- Requests tab -->
         {#if $activeTab === 'requests'}
         <div class="flex flex-row w-full gap-6">
-            <!-- Create Request Panel -->
             <div class="flex flex-col gap-4 w-1/3 max-w-md border-r-2 border-gray-400 pr-12">
                 <h2 class="text-xl font-semibold">Create Request</h2>
                 
@@ -206,7 +191,7 @@
                     <select bind:value={$newRequest.offeredClassId} class="border rounded-md px-2 py-1">
                         <option value={null}>Select a class</option>
                         {#each $schedule as cls}
-                            <option value={cls.id}> {cls.class_name} </option>
+                            <option value={cls.id}>{cls.class_name}</option>
                         {/each}
                     </select>
                 </label>
@@ -225,38 +210,14 @@
                     Create Request
                 </button>
 
-                <!-- Filter Section -->
                 <div class="mt-8">
-                    <h2 class="text-xl font-semibold mb-4">Filters</h2>
-                    <div class="space-y-4">
-                        <input type="text" placeholder="Course Number" bind:value={$filterCriteria.course_number} class="border rounded-md px-2 py-1 w-full" />
-                        <input type="text" placeholder="Class Name" bind:value={$filterCriteria.class_name} class="border rounded-md px-2 py-1 w-full" />
-                        <input type="text" placeholder="Instructor" bind:value={$filterCriteria.instructor} class="border rounded-md px-2 py-1 w-full" />
-                        <select bind:value={$filterCriteria.status} class="border rounded-md px-2 py-1 w-full" on:change={applyFilters}>
-                            <option value={undefined}>All Statuses</option>
-                            <option value="open">Open</option>
-                            <option value="pending">Pending</option>
-                            <option value="closed">Closed</option>
-                        </select>
-                        <div class="flex items-center gap-2 mt-2">
-                            <input 
-                                type="checkbox" 
-                                id="favoriteFilter" 
-                                bind:checked={$favorite} 
-                                on:change={handleFavoriteFilter}
-                                class="w-4 h-4"
-                            />
-                            <label for="favoriteFilter" class="text-sm">Show only favorited requests</label>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            <!-- Requests List -->
             <div class="w-2/3 mx-auto rounded-lg">
                 <div class="no-scrollbar overflow-y-auto h-[40rem] px-1">
                     <ul class="grid grid-cols-1 gap-6">
-                        {#each $requests as req}
+                        {#each $filteredRequests as req}
                             <li class="relative bg-gray-50 border-[#bbbbba] border-2 rounded-lg p-4 hover:shadow-lg transition-shadow">
                                 <div class="absolute inset-0 bg-white opacity-30 blur-sm transition-all z-0"></div>
                                 
@@ -316,5 +277,11 @@
 </div>
 
 <style>
-    /* Add any custom styles here */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
 </style>

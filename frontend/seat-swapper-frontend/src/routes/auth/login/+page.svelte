@@ -11,7 +11,7 @@
             const { token, user } = await login(username, password); // Call the login API
             // Store the token and user info if needed (e.g., in a global store)
             console.log('Login successful:', user);
-            goto('/dashboard'); // Navigate to the dashboard on successful login
+            goto('/dashboard/profile'); // Navigate to the dashboard on successful login
         } catch (error: any) {
             errorMessage = error.message; // Display error message if login fails
         }
